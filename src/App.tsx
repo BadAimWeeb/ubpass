@@ -2,7 +2,7 @@ import React from "react";
 import {
     Toolbar, AppBar, Container, Paper, Typography, FilledInput,
     IconButton, InputAdornment, InputLabel, FormControl,
-    FormControlLabel, Checkbox, Select, MenuItem, Alert
+    FormControlLabel, Checkbox, Select, MenuItem, Alert, Button
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
@@ -10,6 +10,8 @@ import Visibility from "@mui/icons-material/Visibility";
 import AddIcon from "@mui/icons-material/Add";
 
 import BAW_LOGO from "./assets/logo.png";
+
+import LegacyV1Generator from "./LegacyV1Generator";
 
 class LegacyOptions extends React.Component {
     state = {
@@ -212,6 +214,21 @@ export default class App extends React.Component {
     legacyOptions = <LegacyOptions />;
     modernV2Options = <ModernV2Options />;
 
+    invokeGeneratePwd() {
+        if (this.state.useLegacy) {
+            this.setState({
+                ...this.state,
+                //@ts-ignore
+                password: LegacyV1Generator(this.legacyOptions.state, this.state.passwords.map(p => p.state.password))
+            })
+        } else {
+            this.setState({
+                ...this.state,
+                password: "Not implemented"
+            });
+        }
+    }
+
     handleClickShowOutputPassword = () => {
         this.setState({
             ...this.state,
@@ -286,7 +303,7 @@ export default class App extends React.Component {
                     <Container>
                         <Paper elevation={2}>
                             <div style={{ padding: 12 }}>
-                                <Typography style={{ fontSize: 22 }}>Unbreakable Password Generator <sup>v2<sup>BETA</sup></sup></Typography>
+                                <Typography style={{ fontSize: 22 }}>Unbreakable Password Generator <sup>v2<sup style={{ fontSize: 12 }}>BETA</sup></sup></Typography>
                                 <Typography>This tool can be used to generate (multiple) hard-to-break passwords derived from your easily-remembered passwords/passphrases.</Typography>
                                 <Typography>You should not use common passwords as input, otherwise your passwords might be compromised by someone else.</Typography>
                                 <br />
@@ -340,30 +357,33 @@ export default class App extends React.Component {
                                 <br />
                                 <Paper elevation={2}>
                                     <div style={{ padding: 12 }}>
-                                        <Typography>Output:</Typography>
-                                        <div style={{ display: "flex", paddingLeft: 12, paddingRight: 12, flexDirection: "column" }}>
-                                            <FormControl sx={{ m: 1, width: '100%' }} variant="filled">
-                                                <InputLabel htmlFor="password-output">Password</InputLabel>
-                                                <FilledInput
-                                                    id="password-output"
-                                                    type={this.state.showOutputPassword ? 'text' : 'password'}
-                                                    value={this.state.outputPassword}
-                                                    readOnly
-                                                    endAdornment={
-                                                        <InputAdornment position="end">
-                                                            <IconButton
-                                                                aria-label="toggle password visibility"
-                                                                onClick={this.handleClickShowOutputPassword}
-                                                                onMouseDown={this.handleMouseDownOutputPassword}
-                                                                edge="end"
-                                                            >
-                                                                {this.state.showOutputPassword ? <VisibilityOff /> : <Visibility />}
-                                                            </IconButton>
-                                                        </InputAdornment>
-                                                    }
-                                                />
-                                            </FormControl>
+                                        <div style={{ display: "flex" }}>
+                                            <Typography style={{ width: "100%" }}>Output:</Typography>
+                                            <Button variant="contained" color="primary" onClick={() => this.invokeGeneratePwd()}>
+                                                Generate
+                                            </Button>
                                         </div>
+                                        <FormControl sx={{ m: 1, width: '100%' }} variant="filled">
+                                            <InputLabel htmlFor="password-output">Password</InputLabel>
+                                            <FilledInput
+                                                id="password-output"
+                                                type={this.state.showOutputPassword ? 'text' : 'password'}
+                                                value={this.state.outputPassword}
+                                                readOnly
+                                                endAdornment={
+                                                    <InputAdornment position="end">
+                                                        <IconButton
+                                                            aria-label="toggle password visibility"
+                                                            onClick={this.handleClickShowOutputPassword}
+                                                            onMouseDown={this.handleMouseDownOutputPassword}
+                                                            edge="end"
+                                                        >
+                                                            {this.state.showOutputPassword ? <VisibilityOff /> : <Visibility />}
+                                                        </IconButton>
+                                                    </InputAdornment>
+                                                }
+                                            />
+                                        </FormControl>
                                     </div>
                                 </Paper>
                             </div>
