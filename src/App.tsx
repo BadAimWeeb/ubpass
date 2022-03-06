@@ -13,11 +13,25 @@ import BAW_LOGO from "./assets/logo.png";
 
 import LegacyV1Generator from "./LegacyV1Generator";
 
-class LegacyOptions extends React.Component {
+class LegacyOptions extends React.Component<{
+    onChange: (options: {
+        hashAlgo: string,
+        outputType: string,
+        x2Pass: boolean
+    }) => void
+}> {
     state = {
         hashAlgo: "MD5",
         outputType: "HEX",
         x2Pass: false
+    }
+
+    componentDidUpdate() {
+        this.props.onChange(this.state);
+    }
+
+    componentDidMount() {
+        this.props.onChange(this.state);
     }
 
     render() {
@@ -80,7 +94,12 @@ class LegacyOptions extends React.Component {
     }
 }
 
-class ModernV2Options extends React.Component {
+class ModernV2Options extends React.Component<{
+    onChange: (options: {
+        hashAlgo: string,
+        outputMode: string
+    }) => void
+}> {
     state = {
         hashAlgo: "SHA3",
         outputMode: "PASSWORD"
@@ -151,6 +170,7 @@ class ModernV2Options extends React.Component {
 
 class PasswordInput extends React.Component<{
     onSelfRemove: (key: string) => void,
+    onChange: (key: string, value: string) => void,
     k: string
 }> {
     state = {
@@ -164,6 +184,7 @@ class PasswordInput extends React.Component<{
             ...this.state,
             password: event.target.value
         });
+        this.props.onChange(this.props.k, event.target.value);
     }
 
     handleClickShowPassword = () => {
@@ -211,20 +232,28 @@ class PasswordInput extends React.Component<{
 }
 
 export default class App extends React.Component {
-    legacyOptions = <LegacyOptions />;
-    modernV2Options = <ModernV2Options />;
+    legacyOptions = <LegacyOptions onChange={c => this.setState({
+        ...this.state,
+        options: c
+    })} />;
+    modernV2Options = <ModernV2Options onChange={c => this.setState({
+        ...this.state,
+        options: c
+    })} />;
 
-    invokeGeneratePwd() {
+    async invokeGeneratePwd() {
         if (this.state.useLegacy) {
+            //@ts-ignore
+            let pwd = await LegacyV1Generator(this.state.options, Object.values(this.state.passValue));
+            console.log(pwd);
             this.setState({
                 ...this.state,
-                //@ts-ignore
-                password: LegacyV1Generator(this.legacyOptions.state, this.state.passwords.map(p => p.state.password))
+                outputPassword: pwd
             })
         } else {
             this.setState({
                 ...this.state,
-                password: "Not implemented"
+                outputPassword: "Not implemented"
             });
         }
     }
@@ -246,20 +275,38 @@ export default class App extends React.Component {
         this.setState({
             ...this.state,
             passwords: newInputPasswords
-        })
+        });
+    }
+
+    changeInputPassword = (key: string, value: string) => {
+        let newInputPasswords = { ...this.state.passValue };
+        newInputPasswords[key] = value;
+        this.setState({
+            ...this.state,
+            passValue: newInputPasswords
+        });
     }
 
     state: {
+        options: any,
         passwords: {
             [x: string]: JSX.Element
+        },
+        passValue: {
+            [x: string]: string
         },
         useLegacy: boolean,
         outputPassword: string,
         showOutputPassword: boolean
     } = {
+            options: {},
             passwords: {
-                default1: <PasswordInput k="default1" key="default1" onSelfRemove={k => this.selfRemoveInputPassword(k)} />,
-                default2: <PasswordInput k="default2" key="default2" onSelfRemove={k => this.selfRemoveInputPassword(k)} />
+                default1: <PasswordInput k="default1" key="default1" onSelfRemove={k => this.selfRemoveInputPassword(k)} onChange={(k, v) => this.changeInputPassword(k, v)} />,
+                default2: <PasswordInput k="default2" key="default2" onSelfRemove={k => this.selfRemoveInputPassword(k)} onChange={(k, v) => this.changeInputPassword(k, v)} />
+            },
+            passValue: {
+                default1: "",
+                default2: ""
             },
             useLegacy: true,
             outputPassword: "",
@@ -317,7 +364,7 @@ export default class App extends React.Component {
                                                     ...this.state,
                                                     passwords: {
                                                         ...this.state.passwords,
-                                                        [k]: <PasswordInput k={k} key={k} onSelfRemove={k => this.selfRemoveInputPassword(k)} />
+                                                        [k]: <PasswordInput k={k} key={k} onSelfRemove={k => this.selfRemoveInputPassword(k)} onChange={(k, v) => this.changeInputPassword(k, v)} />
                                                     }
                                                 });
                                             }}>

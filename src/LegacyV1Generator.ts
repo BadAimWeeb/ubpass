@@ -1,6 +1,9 @@
 import * as HashWASM from "hash-wasm";
 import Ecoji from "ecoji-js";
-import Base65536 from "base65536";
+import * as Base65536 from "base65536";
+import _buffer from "buffer";
+
+const Buffer = _buffer.Buffer;
 
 export default async function Generator(config: {
     hashAlgo: string,
@@ -79,21 +82,34 @@ export default async function Generator(config: {
         case "HEX":
             return hash;
         case "BASE64":
-            return Buffer.from(hash, "hex").toString("base64");
+            // For base64, if x2Pass is true, we need to split hex string into two parts,
+            // convert them separately, and concatenate them
+            if (config.x2Pass) {
+                return Buffer.from(hash.substring(0, hash.length / 2), "hex").toString("base64") +
+                    Buffer.from(hash.substring(hash.length / 2), "hex").toString("base64");
+            } else {
+                return Buffer.from(hash, "hex").toString("base64");
+            }
         case "BINARY":
             return [...Buffer.from(hash, "hex")].map(x => x.toString(2).padStart(8, "0")).join("");
         case "ECOJI":
-            return Ecoji.encode(
-                (hash.match(/.{1,2}/g) || [])
-                    .map(x => String.fromCharCode(parseInt(x, 16)))
-                    .join("")
-            );
+            // Doing the same thing as base64, but with ecoji encoding instead.
+            let baseArray = (hash.match(/.{1,2}/g) || []).map(x => String.fromCharCode(parseInt(x, 16)))
+            if (config.x2Pass) {
+                return Ecoji.encode(baseArray.slice(0, baseArray.length / 2).join("")) +
+                    Ecoji.encode(baseArray.slice(baseArray.length / 2).join(""));
+            } else {
+                return Ecoji.encode(baseArray.join(""));
+            }
         case "BASE65536":
-            return Base65536.encode(
-                Uint8Array.from(
-                    (hash.match(/.{1,2}/g) || []).map(x => parseInt(x, 16))
-                )
-            );
+            // Also doing the same thing as base64, but with base65536 encoding instead.
+            let baseArray2 = (hash.match(/.{1,2}/g) || []).map(x => parseInt(x, 16))
+            if (config.x2Pass) {
+                return Base65536.encode(Uint8Array.from(baseArray2.slice(0, baseArray2.length / 2))) +
+                    Base65536.encode(Uint8Array.from(baseArray2.slice(baseArray2.length / 2)));
+            } else {
+                return Base65536.encode(Uint8Array.from(baseArray2));
+            }
         default:
             throw "Unsupported output type";
     }
